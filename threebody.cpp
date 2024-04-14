@@ -19,7 +19,7 @@ struct par {
   double reproduction{20};
   double deltaT{0.01};
   static const unsigned int n = 2;
-  unsigned int size{100};
+  unsigned int size{15};
   unsigned int rate{
       1};  // rapporto tra la dimensione dello schermo e della generazione
   unsigned int rate2{100};
@@ -46,13 +46,14 @@ struct boidstate {
 auto generate(std::default_random_engine
         eng) {  // genera pos e vel di un boid distribuiti secondo
   // una gauss centrata in 0
-  boidstate boid({}, {}, {}, 0);
+  boidstate boid({}, {}, {}, 100);
   std::normal_distribution<double> dist(0.0, para.sigma);
   for (auto it = boid.pos.begin(); it != boid.pos.end(); ++it) {
     *it = dist(eng);
   }
   for (auto it = boid.vel.begin(), last = boid.vel.end(); it != last; ++it) {
-    *it = (para.vel_factor * dist(eng));
+    *it = 0;
+    //(para.vel_factor * dist(eng));
   }
   return boid;
 }
@@ -144,7 +145,7 @@ auto gravity(stormo& set, boidstate& boid) {
   boid.acc = {0, 0};
   std::cout << "Massa " << boid.massa << "\n";
   for (auto jt = set.begin(); jt != set.end(); ++jt) {
-    if (distance(*jt, boid) != 0) {
+    if (distance(*jt, boid) > pow(para.radius,2)) {
       std::array<double, para.dim> verij;
       for (auto index = verij.begin(), j = (*jt).pos.begin(),
                 i = boid.pos.begin();
@@ -155,7 +156,6 @@ auto gravity(stormo& set, boidstate& boid) {
       assert(distance(boid, *jt) != 0);
       for (auto index = boid.acc.begin(), i = verij.begin();
            index != boid.acc.end(); ++index, ++i) {
-        if (distance(*jt, boid) < pow(para.radius, 2)) factor= -factor; 
         *index += factor * (*i);
       }
     }
@@ -202,9 +202,9 @@ class ensemble {
            index != (*jt).pos.end(); ++index, ++accind, ++velind, ++pix) {
         (*velind) += (*accind) * para.deltaT;
         (*index) += (*velind) * para.deltaT;
-        /* (*index) = fmod(*index, *pix);
+         (*index) = fmod(*index, *pix);
          if (*index <= 0) *index += *pix;
-         assert(*index <= *pix);*/
+         assert(*index <= *pix);
       }
     }
     std::cout << "Energia totale " << potenziale(newset) + cinetica(newset)
@@ -217,10 +217,11 @@ class ensemble {
 int main() {
   std::random_device r;
   std::default_random_engine eng(r());
-  boidstate pianeta1({500, 400}, {-100, 0}, {0, 0}, 100);
+  /*boidstate pianeta1({500, 400}, {-100, 0}, {0, 0}, 100);
   boidstate pianeta2({400, 300}, {100, 50}, {0, 0}, 100);
   boidstate pianeta3({300, 200}, {0, 100}, {0, 0}, 100);
-  stormo flock = {pianeta1, pianeta2, pianeta3};
+  stormo flock = {pianeta1, pianeta2, pianeta3};*/
+  stormo flock(generator(eng));
   ensemble prova(flock);
   std::cout << "Dimensione generazione" << prova.size_() << "\n";
   auto y = prova.set_().size();
@@ -243,14 +244,14 @@ int main() {
     while (window.pollEvent(event)) {
       if (event.type == sf::Event::Closed) window.close();
     }
-    if (event.type == sf::Event::MouseWheelScrolled) {
+    /*if (event.type == sf::Event::MouseWheelScrolled) {
       if (event.mouseWheelScroll.delta > 0) {
         prova.setZoom(1.1);
       }
       if (event.mouseWheelScroll.delta < 0) {
         prova.setZoom(0.9);
       }
-    }
+    }*/
     // Calculate elapsed time for this frame
     sf::Time elapsedTime = clock.restart();
     accumulator += elapsedTime;
