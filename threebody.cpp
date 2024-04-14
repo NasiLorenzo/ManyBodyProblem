@@ -28,6 +28,7 @@ struct par {
   double pi = 3.141592;
   double theta{pi / 12};
   double G{6.7 * pow(10, 4)};
+  double radius{2};
 };
 par para;
 
@@ -154,25 +155,26 @@ auto gravity(stormo& set, boidstate& boid) {
       assert(distance(boid, *jt) != 0);
       for (auto index = boid.acc.begin(), i = verij.begin();
            index != boid.acc.end(); ++index, ++i) {
+        if (distance(*jt, boid) < pow(para.radius, 2)) factor= -factor; 
         *index += factor * (*i);
       }
     }
   }
   return boid;
 }
-auto potenziale(const stormo& set){
+auto potenziale(const stormo& set) {
   double U{};
-  for(auto it=set.begin();it!=set.end()-1;++it){
-    for(auto jt=it+1;jt!=set.end();++jt){
-      U+=-para.G*(it->massa)*(jt->massa)/sqrt(distance(*jt,*it));
+  for (auto it = set.begin(); it != set.end() - 1; ++it) {
+    for (auto jt = it + 1; jt != set.end(); ++jt) {
+      U += -para.G * (it->massa) * (jt->massa) / sqrt(distance(*jt, *it));
     }
   }
   return U;
 }
-auto cinetica(const stormo& set){
+auto cinetica(const stormo& set) {
   double K{};
-  for(auto it=set.begin();it!=set.end();++it){
-    K+=1./2*((*it).massa)*mod_vel(*it);
+  for (auto it = set.begin(); it != set.end(); ++it) {
+    K += 1. / 2 * ((*it).massa) * mod_vel(*it);
   }
   return K;
 }
@@ -180,36 +182,34 @@ class ensemble {
   stormo set;
   stormo newset{set};
   double zoom{1.};
+
  public:
   ensemble(stormo& old) : set{old} {}
   auto set_() { return set; }
   auto newset_() { return newset; }
   auto size_() { return set.size(); }
-  void setZoom(double NewZoom){
-    zoom*=NewZoom;
-  }
-  auto getZoom(){
-    return zoom;
-  }
+  void setZoom(double NewZoom) { zoom *= NewZoom; }
+  auto getZoom() { return zoom; }
   void update() {
     newset = set;
     for (auto it = set.begin(), jt = newset.begin(); it != set.end();
          ++it, ++jt) {
       *jt = gravity(set, *jt);
       auto pix = para.pixel.begin();
-      //std::cout<<"moduli vel "<<mod_vel(*jt)<<"\n";
+      // std::cout<<"moduli vel "<<mod_vel(*jt)<<"\n";
       for (auto index = (*jt).pos.begin(), accind = (*jt).acc.begin(),
                 velind = (*jt).vel.begin();
            index != (*jt).pos.end(); ++index, ++accind, ++velind, ++pix) {
         (*velind) += (*accind) * para.deltaT;
         (*index) += (*velind) * para.deltaT;
-       /* (*index) = fmod(*index, *pix);
-        if (*index <= 0) *index += *pix;
-        assert(*index <= *pix);*/
+        /* (*index) = fmod(*index, *pix);
+         if (*index <= 0) *index += *pix;
+         assert(*index <= *pix);*/
       }
     }
-    std::cout << "Energia totale " <<potenziale(newset)+cinetica(newset) << "\n";
-    std::cout<<"Livello di zoom "<<getZoom()<<"\n";
+    std::cout << "Energia totale " << potenziale(newset) + cinetica(newset)
+              << "\n";
+    std::cout << "Livello di zoom " << getZoom() << "\n";
     set = newset;
   }
 };
@@ -243,11 +243,11 @@ int main() {
     while (window.pollEvent(event)) {
       if (event.type == sf::Event::Closed) window.close();
     }
-    if(event.type==sf::Event::MouseWheelScrolled){
-      if(event.mouseWheelScroll.delta>0){
+    if (event.type == sf::Event::MouseWheelScrolled) {
+      if (event.mouseWheelScroll.delta > 0) {
         prova.setZoom(1.1);
       }
-      if(event.mouseWheelScroll.delta<0){
+      if (event.mouseWheelScroll.delta < 0) {
         prova.setZoom(0.9);
       }
     }
@@ -268,9 +268,10 @@ int main() {
       sf::CircleShape circle(5);
       // std::cout<<prova.set_().size()<<"\n";
       circle.setFillColor(sf::Color::Black);
-      circle.setPosition(boid.pos[0] / para.rate*prova.getZoom(),
-          boid.pos[1] / para.rate*prova.getZoom());  // Assuming x and y are in pos[0]
-                                     // and pos[1] respectively
+      circle.setPosition(boid.pos[0] / para.rate * prova.getZoom(),
+          boid.pos[1] / para.rate *
+              prova.getZoom());  // Assuming x and y are in pos[0]
+                                 // and pos[1] respectively
       window.draw(circle);
     }
 
